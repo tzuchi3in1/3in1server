@@ -29,8 +29,7 @@ import com.vaadin.flow.server.StreamResource;
 @Route(value = "search", layout = RouterLayout.class)
 public class SearchPage extends VerticalLayout {
 	private static final long serialVersionUID = 5L;
-	 
-	
+		
 	private Grid<Integer> grid = new Grid<>();
 	
 	public SearchPage() {
