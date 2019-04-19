@@ -11,19 +11,50 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.mss.mssweb.helper.dbservice.*;
 import com.mss.mssweb.dto.*;
 
 public class FileBC {
 
-	public static ArrayList<ImageFile> searchImage(String fileName, String eventName) {
+	public static ArrayList<ImageFile> searchImage(int pageNo, int pageSize, String fileName, String eventName) {
+		String sqlScript = "";
+		int limitOffset = 0;
+		int limitCount = 10;
+		
+		if (pageNo > 0 && pageSize > 0) {
+			limitOffset = (pageNo - 1) * pageSize;
+			limitCount = pageSize;
+		}
+		
+		//sqlScript = "SELECT * FROM ImageFile WHERE FileName = '" + fileName + "'";
+		sqlScript = "SELECT * FROM prop_file LIMIT " + limitOffset + ", " + limitCount + ";";
+		System.out.println(sqlScript);
+		return SearchImage(sqlScript);
+	}
+	
+	public static int getTotalRecord(String fileName, String eventName) {
 		String sqlScript = "";
 		
 		//sqlScript = "SELECT * FROM ImageFile WHERE FileName = '" + fileName + "'";
-		sqlScript = "SELECT * FROM prop_file";
+		sqlScript = "SELECT COUNT(*) AS TotalRecord FROM prop_file";
 		
-		return SearchImage(sqlScript);
+		return GetRecordCount(sqlScript);
+	}
+	
+	public static HashMap<String,String> getCategory(String code) {
+		String sqlScript = "";
+		
+		sqlScript = "SELECT * FROM prop_category ";
+		
+		if (code != "") {
+			sqlScript = sqlScript + " WHERE code = '" + code + "' ";
+		}
+		
+		sqlScript = sqlScript + " ORDER BY description";
+		
+		return GetCategory(sqlScript);
 	}
 	
 	private static ArrayList<ImageFile> SearchImage(String sqlScript) {
@@ -46,8 +77,14 @@ public class FileBC {
 						
 						ImageFile objImage = new ImageFile();
 						objImage.setFileName(rsResult.getString("file_name"));
-						objImage.setEventName(rsResult.getString("file_path"));
+						objImage.setFilePath(rsResult.getString("file_path"));
 						objImage.setFileExt(rsResult.getString("file_ext"));
+						objImage.setOriginalComment(rsResult.getString("comm_original"));
+						objImage.setEditedComment(rsResult.getString("comm_edited"));
+						objImage.setPhotographerCode(rsResult.getString("photographer_code"));
+						objImage.setDateFrom(rsResult.getDate("date_from"));
+						objImage.setDateTo(rsResult.getDate("date_to"));
+						
 						alImageFiles.add(objImage);
 					}
 					
@@ -208,6 +245,66 @@ public class FileBC {
 		return savedSuccess;
 	}
 	
+	private static int GetRecordCount(String sqlScript) {
+		ResultSet rsResult = null;
+		Connection objConn = null;
+		Statement objStmt = null;
+		int totalRecord = 0;
+		
+		try {
+			
+			if (sqlScript != null && sqlScript != "") {
+				objConn = DriverManager.getConnection(DBService.baseDBConnUrl, DBService.baseDBUserID, DBService.baseDBPassword);
+				
+				if (objConn != null) {
+					objStmt = objConn.createStatement();
+					
+					rsResult = objStmt.executeQuery(sqlScript);
+					
+					while (rsResult.next()) {
+						totalRecord = rsResult.getInt("TotalRecord");
+					}
+				}
+			}
+			
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			
+		} finally {
+			
+			if (rsResult != null) {
+				try {
+					rsResult.close();	
+				}
+				catch (SQLException e) { 
+					e.printStackTrace(); 
+				}
+			}
+			
+			if (objStmt != null) {
+				try {
+					objStmt.close();	
+				}
+				catch (SQLException e) { 
+					e.printStackTrace(); 
+				}
+			}
+			
+			if (objConn != null) {
+				try {
+					objConn.close();	
+				}
+				catch (SQLException e) { 
+					e.printStackTrace(); 
+				}
+			}
+			
+		}
+		
+		return totalRecord;
+	}
+	
 	public static String getFileExtension(String fileName) {
 		String fileExt = "";
 		
@@ -216,5 +313,68 @@ public class FileBC {
 		}
 		
 		return fileExt;
+	}
+	
+	private static HashMap<String,String> GetCategory(String sqlScript) {
+		ResultSet rsResult = null;
+		Connection objConn = null;
+		Statement objStmt = null;
+		HashMap<String,String> hmResult = new HashMap<String,String>();
+		
+		try {
+			
+			if (sqlScript != null && sqlScript != "") {
+				objConn = DriverManager.getConnection(DBService.baseDBConnUrl, DBService.baseDBUserID, DBService.baseDBPassword);
+				
+				if (objConn != null) {
+					objStmt = objConn.createStatement();
+					
+					rsResult = objStmt.executeQuery(sqlScript);
+					
+					while (rsResult.next()) {
+						if (!hmResult.containsKey(rsResult.getString("code"))) {
+							hmResult.put(rsResult.getString("code"), rsResult.getString("description"));
+						}
+					}
+					
+				}
+			}
+			
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			
+		} finally {
+			
+			if (rsResult != null) {
+				try {
+					rsResult.close();	
+				}
+				catch (SQLException e) { 
+					e.printStackTrace(); 
+				}
+			}
+			
+			if (objStmt != null) {
+				try {
+					objStmt.close();	
+				}
+				catch (SQLException e) { 
+					e.printStackTrace(); 
+				}
+			}
+			
+			if (objConn != null) {
+				try {
+					objConn.close();	
+				}
+				catch (SQLException e) { 
+					e.printStackTrace(); 
+				}
+			}
+			
+		}
+		
+		return hmResult;
 	}
 }

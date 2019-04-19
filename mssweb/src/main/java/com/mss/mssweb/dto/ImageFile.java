@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 
 import javax.imageio.ImageIO;
 
@@ -16,9 +17,15 @@ public class ImageFile implements InputStreamFactory  {
 	private String fileName = "";
 	private String eventName = "";
 	private String fileExt = "";
+	private String filePath = "";
 	private String imagePath = "";
 	private String defaultWidth = "200px";
 	private String defaultHeight = "200px";
+	private String commOriginal = "";
+	private String commEdited = "";
+	private Date dateFrom = new Date();
+	private Date dateTo = new Date();
+	private String photographerCode = "";
 	
 	private String rootPath = "D:\\Development\\eclipse-workspace\\";
 	private String childPath = "files\\P001";
@@ -56,6 +63,14 @@ public class ImageFile implements InputStreamFactory  {
 		this.fileExt = fileExt;
 	}
 	
+	public String getFilePath() {
+		return filePath;
+	}
+	
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
+	}
+	
 	public String getFileNameWithExt() {
 		return this.fileName + "." + this.fileExt; 
 	}
@@ -66,6 +81,46 @@ public class ImageFile implements InputStreamFactory  {
 	
 	public void setEventName(String eventName) {
 		this.eventName = eventName;
+	}
+	
+	public String getOriginalComment() {
+		return commOriginal;
+	}
+	
+	public void setOriginalComment(String comment) {
+		this.commOriginal = comment;
+	}
+	
+	public String getEditedComment() {
+		return commEdited;
+	}
+	
+	public void setEditedComment(String comment) {
+		this.commEdited = comment;
+	}
+	
+	public Date getDateTo() {
+		return dateTo;
+	}
+	
+	public void setDateTo(Date date) {
+		this.dateTo = date;
+	}
+	
+	public Date getDateFrom() {
+		return dateFrom;
+	}
+	
+	public void setDateFrom(Date date) {
+		this.dateFrom = date;
+	}
+	
+	public String getPhotographerCode() {
+		return photographerCode;
+	}
+	
+	public void setPhotographerCode(String code) {
+		this.photographerCode = code;
 	}
 
 	@Override

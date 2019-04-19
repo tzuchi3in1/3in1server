@@ -1,7 +1,11 @@
 package com.mss.mssweb.page;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.stream.IntStream;
+
+import javax.servlet.http.HttpSession;
 
 import com.mss.mssweb.RouterLayout;
 import com.mss.mssweb.helper.dbservice.*;
@@ -16,6 +20,8 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -24,18 +30,35 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.InputStreamFactory;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinSession;
+
+import de.kaesdingeling.hybridmenu.components.Notification;
+import de.kaesdingeling.hybridmenu.components.NotificationCenter;
 
 @StyleSheet("../main.css") // Relative to Servlet URL
 @Route(value = "search", layout = RouterLayout.class)
 public class SearchPage extends VerticalLayout {
 	private static final long serialVersionUID = 5L;
 		
+	VaadinSession session = VaadinSession.getCurrent();
 	private Grid<Integer> grid = new Grid<>();
+	private Label message;
+	private Div divMessage;
+	private TextField txtPhotoName; 
+	private VerticalLayout gridParent = new VerticalLayout();
+	private int pageSize = 10;
 	
 	public SearchPage() {
 		add(new H2("Search Photo"));  
 		
-		TextField txtPhotoName = new TextField("File Name","","search by file name"); 	
+		message = new Label("");
+		
+		divMessage = new Div();
+		divMessage.setClassName("alertMessage");
+		divMessage.add(message);
+		add(divMessage);
+		
+		txtPhotoName = new TextField("File Name","","search by file name"); 	
 		txtPhotoName.setWidth("400px");
 		TextField txtEvent = new TextField("Event","","search by event");
 		txtEvent.setWidth("400px");  
@@ -45,8 +68,10 @@ public class SearchPage extends VerticalLayout {
 		txtPhotographerName.setWidth("400px");  
 		
 		ComboBox<String> cbCategory = new ComboBox<String>("Category"); 
+		HashMap<String,String> categoryList = FileBC.getCategory("");
 		cbCategory.setItemLabelGenerator((i) -> i);
-		cbCategory.setItems("Recycle","Donation","Disaster Recovery");
+		//cbCategory.setItems("Recycle","Donation","Disaster Recovery");
+		cbCategory.setItems(categoryList.values());
 		cbCategory.setWidth("400px");
 		
 		Label lblSpacing1 = new Label("");
@@ -64,11 +89,7 @@ public class SearchPage extends VerticalLayout {
 		//Label lblTestDB = new Label(objDS.getData());
 		//add(lblTestDB);
 		
-		ArrayList<ImageFile> lstImageFile = new ArrayList<ImageFile>();
-		//Label lblTestResult1 = new Label("");
 		
-		lstImageFile = FileBC.searchImage("", "");
-		initImageGrid(lstImageFile);
 		
 		//lblTestResult1.setText("Count: " + String.valueOf(lstImageFile.size()));
 		//add(lblTestResult1);
@@ -87,20 +108,32 @@ public class SearchPage extends VerticalLayout {
 		*/
 	}
 	
-	public void initImageGrid(ArrayList<ImageFile> lstImageFile) {
+	public void initImageGrid(int currentPageNo, int totalRecord, ArrayList<ImageFile> lstImageFile) {
 		
-		VerticalLayout gridParent = new VerticalLayout();
 		int maxCol = 5;
-		int maxRecords = lstImageFile.size();
-		int maxRow = 0;
+		//int maxRecords = lstImageFile.size();
+		int maxRow = 1;
 		String rootPath = "D:\\Development\\eclipse-workspace\\";
 		String childPath = "files\\P001";
+		int totalPages = 1;
 		
+		// Re-initialize grid.
+		gridParent = new VerticalLayout();
+		
+		/*
 		if (maxRecords % maxCol > 0) {
 			maxRow = (maxRecords / maxCol) + 1;
 		}
 		else {
 			maxRow = maxRecords / maxCol;
+		}
+		*/
+		
+		if (pageSize % maxCol > 0) {
+			maxRow = (pageSize / maxCol) + 1;
+		}
+		else {
+			maxRow = pageSize / maxCol;
 		}
 		
 		if (lstImageFile.size() > 0) {
@@ -121,27 +154,77 @@ public class SearchPage extends VerticalLayout {
 			//Label gridTitle = new Label("Search Result");
 			//gridTitle.setWidth("800px");
 			Div divGridTitle = new Div();
-			divGridTitle.add(new H4(""));
+			//divGridTitle.add(new H4("Search Result"));
+			divGridTitle.add(new H4("Total Record(s): " + totalRecord));
 			//divGridTitle.setWidth("900px");
 			divGridTitle.setClassName("gridTitle");
 			
+			/* Construct Paging ComboBox. */
 			Div divGridPaging = new Div();
 			H4 h4GridPaging = new H4("Page: ");
 			
 			ComboBox<String> cbGridPaging = new ComboBox<String>(""); 
-			cbGridPaging.setItemLabelGenerator((i) -> i);
-			cbGridPaging.setItems("1","2","3");
+			//cbGridPaging.setItemLabelGenerator((i) -> i);
+			//cbGridPaging.setItems("1","2","3");
+			if (totalRecord % (maxCol * maxRow) > 0) {
+				totalPages = (totalRecord / (maxCol * maxRow)) + 1;
+			}
+			else {
+				totalPages = (totalRecord / (maxCol * maxRow));
+			}
+			//System.out.println("total Record: " + totalRecord);
+			//System.out.println("Total Pages: " + totalPages);
 			
-			divGridPaging.setClassName("gridPagingCB");
+			ArrayList<String> pageNo = new ArrayList<String>();
+			for (int i = 1; i <= totalPages; i++) {
+				pageNo.add(String.valueOf(i));
+			}
+			
+			cbGridPaging.setItems(pageNo);
+			
+			if (currentPageNo <= pageNo.size()) {
+				cbGridPaging.setValue(String.valueOf(currentPageNo));
+			}
+			else {
+				cbGridPaging.setValue(String.valueOf(1));
+			}
+			
+			cbGridPaging.addValueChangeListener(event -> {
+				
+				
+			    if (event.getSource().isEmpty()) {
+			    	divMessage.setVisible(true);
+			        message.setText("No page number selected.");
+			        /*
+			        NotificationCenter notificationCenter = VaadinSession.getCurrent().getAttribute(NotificationCenter.class);
+					Notification notification = Notification.get()
+							.withTitle("Alert")
+							.withContent("No page number selected.")
+							.withIcon(VaadinIcon.EXCLAMATION);
+					notificationCenter.add(notification);
+					*/
+			    } else {
+			    	// stop here.
+			        //message.setText("Selected browser: " + event.getValue());
+			    	getRecord(event.getValue());
+			    }
+			});
+			
+			
+			
+			divGridPaging.setClassName("gridPagingComboBox");
 			h4GridPaging.add(cbGridPaging);
 			divGridPaging.add(h4GridPaging);
 			
 			gridPagingRow.add(divGridTitle, divGridPaging);
+			gridPagingRow.setClassName("gridPagingRow");
 			//gridParent.add(gridPagingRow);
-			add(gridPagingRow);
+			gridParent.add(gridPagingRow);
+			
 			
 			/* Render Grid Table. */
 			HorizontalLayout hlRow = new HorizontalLayout();
+			int rowCount = 0;
 			
 			for (int i = 1; i <= lstImageFile.size(); i++) {
 				ImageFile objFile = lstImageFile.get(i - 1);
@@ -155,19 +238,51 @@ public class SearchPage extends VerticalLayout {
 				//Button button = new Button(imgFile, event -> viewDetails(objFile.getFileName()));
 				
 				Anchor imgA = new Anchor();
+				imgA.setClassName("gridImageAnchor");
 				imgA.add(imgFile);
-				imgA.setHref("javascript:window.open('http://www.yahoo.com')");
+				imgA.setHref("javascript:window.open('fileDetailPage/" + objFile.getFileName() + "')");
 				imgA.setTarget("_blank");
 				
-				Div imgDiv = new Div();
-				imgDiv.add(imgA);
-				imgDiv.setClassName("gridImageContainer");
+				VerticalLayout imgFrame = new VerticalLayout();
+				imgFrame.setClassName("gridDataImgFrame");
+				imgFrame.add(imgA);
 				
-				hlRow.add(imgDiv);
+				VerticalLayout imgEditedCommFrame = new VerticalLayout();
+				imgEditedCommFrame.setClassName("gridDataImgCommFrame");
+				
+				String editedComm = objFile.getEditedComment();
+				if (editedComm.length() > 30) {
+					editedComm = editedComm.substring(0,30) + "...";
+				}
+				Label imgEditedComm = new Label(editedComm);
+				imgEditedCommFrame.add(imgEditedComm);
+				
+				VerticalLayout imgPhotographerCodeFrame = new VerticalLayout();
+				imgPhotographerCodeFrame.setClassName("gridDataImgPCFrame");
+				
+				String photographerCode = objFile.getPhotographerCode();
+				Label imgPhotographerCode = new Label(photographerCode);
+				imgPhotographerCodeFrame.add(imgPhotographerCode);
+				
+				VerticalLayout imgTile = new VerticalLayout();
+				imgTile.setClassName("gridDataCol");
+				imgTile.add(imgFrame, imgEditedCommFrame, imgPhotographerCodeFrame);
+				hlRow.add(imgTile);
+				
+				//Div imgDiv = new Div();
+				//imgDiv.add(imgA);
+				//imgDiv.setClassName("gridImageContainer");
+				//hlRow.add(imgDiv);
 				
 				if (i % maxCol == 0) {
+					hlRow.setClassName("gridDataRow");
 					gridParent.add(hlRow);
 					hlRow = new HorizontalLayout();
+					
+					rowCount++;
+					if (rowCount >= maxRow) {
+						break;
+					}
 				}
 			}
 			/*
@@ -194,11 +309,48 @@ public class SearchPage extends VerticalLayout {
 		add(gridParent);
 	}
 	
+	
+	
 	public void viewDetails(String strFileName) {
 		
 	}
 	
 	public void searchRecord() {
-		grid.setItems(IntStream.range(1,10).boxed()); 
+		// Get search criteria from UI. 
+		String srcPhotoName = txtPhotoName.getValue();
+		
+		/* Store search criteria to session. */
+		session.setAttribute("srcPhotoName", srcPhotoName);
+		session.setAttribute("srcPageNo", 1);
+		
+		// Reset alert message.
+		message.setText("");
+		divMessage.setVisible(false);
+		this.remove(gridParent);
+		
+		// Get Data.
+		int totalRecord = FileBC.getTotalRecord(srcPhotoName, "");
+		ArrayList<ImageFile> lstImageFile = new ArrayList<ImageFile>();
+		lstImageFile = FileBC.searchImage(1, pageSize, srcPhotoName, "");
+		initImageGrid(1, totalRecord, lstImageFile);
+		
+		
+	}
+	
+	public void getRecord(String pageNo) {
+		// Get search criteria from Session.
+		String srcPhotoName = (String) session.getAttribute("srcPhotoName");
+		//int srcPageNo = (int) session.getAttribute("srcPageNo");
+		int srcPageNo = Integer.parseInt(pageNo);
+		session.setAttribute("srcPageNo", srcPageNo);
+		System.out.println(pageNo);
+		
+		int totalRecord = FileBC.getTotalRecord(srcPhotoName, "");
+		ArrayList<ImageFile> lstImageFile = new ArrayList<ImageFile>();
+		
+		lstImageFile = FileBC.searchImage(srcPageNo, pageSize, srcPhotoName, "");
+		
+		this.remove(gridParent);
+		initImageGrid(srcPageNo, totalRecord, lstImageFile);
 	}
 }
