@@ -3,6 +3,7 @@ package com.mss.mssweb;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.login.LoginOverlay;
 import com.vaadin.flow.component.page.BodySize;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.VaadinSession;
@@ -26,6 +27,8 @@ import de.kaesdingeling.hybridmenu.data.MenuConfig;
 //import de.kaesdingeling.hybridmenu.demo.page.UploadPage;
 import de.kaesdingeling.hybridmenu.design.DesignItem;
 
+import com.mss.mssweb.bc.AuthenticationBC;
+import com.mss.mssweb.dto.UserInfo;
 import com.mss.mssweb.page.*;
 
 @Push
@@ -34,13 +37,111 @@ import com.mss.mssweb.page.*;
 public class RouterLayout extends HybridMenu  {
 	private static final long serialVersionUID = 2L;
 
+	
+	
 	@Override
 	public boolean init(VaadinSession vaadinSession, UI ui) {
 		withConfig(MenuConfig.get().withDesignItem(DesignItem.getWhiteDesign()).withBreadcrumbs(true));
 		
+		boolean challengeUser = true;
+		//VaadinSession session = VaadinSession.getCurrent();
+		
+		if (vaadinSession != null) {
+			if(vaadinSession.getAttribute("sesUserID") != null) {
+				challengeUser = false;
+			}
+		}
+		
+		if (challengeUser) {
+			LoginOverlay component = new LoginOverlay();
+			component.addLoginListener(e -> {
+				
+			    boolean isAuthenticated = AuthenticationBC.authenticate(e.getUsername(), e.getPassword());
+			    
+			    if (isAuthenticated) {
+			    	UserInfo userInfo = AuthenticationBC.getUserInfo(e.getUsername());
+			    	
+			    	if (userInfo != null) {
+			    		vaadinSession.setAttribute("sesUserID", userInfo.getUserID());
+			    		vaadinSession.setAttribute("sesUserFullName", userInfo.getFullName());
+			    		vaadinSession.setAttribute("sesUserType", userInfo.getUserType());
+			    		vaadinSession.setAttribute("sesUserIsActive", userInfo.getIsActive());
+			    		//userFullName = userInfo.getFullName();
+			    		
+			    		initiateControls();
+			    	}
+			        component.close();
+			    } else {
+			    	component.setError(true);
+			    }
+			    
+			});
+			component.setOpened(true);
+		}
+		else {
+			initiateControls();
+		}
+		
+		return true; // build menu
+	}
+	
+	// Ask for credential if session is empty or expired.
+	protected void checkLoginSession() {
+		boolean challengeUser = true;
+		VaadinSession session = VaadinSession.getCurrent();
+		
+		if (session != null) {
+			if(session.getAttribute("sesUserID") != null) {
+				challengeUser = false;
+			}
+		}
+		
+		if (challengeUser) {
+			LoginOverlay component = new LoginOverlay();
+			component.addLoginListener(e -> {
+				
+			    boolean isAuthenticated = AuthenticationBC.authenticate(e.getUsername(), e.getPassword());
+			    
+			    if (isAuthenticated) {
+			    	UserInfo userInfo = AuthenticationBC.getUserInfo(e.getUsername());
+			    	
+			    	if (userInfo != null) {
+			    		session.setAttribute("sesUserID", userInfo.getUserID());
+			    		session.setAttribute("sesUserFullName", userInfo.getFullName());
+			    		session.setAttribute("sesUserType", userInfo.getUserType());
+			    		session.setAttribute("sesUserIsActive", userInfo.getIsActive());
+			    	}
+			        component.close();
+			    } else {
+			    	component.setError(true);
+			    }
+			    
+			});
+			component.setOpened(true);
+		}
+	}
+	
+	protected void initiateControls() {
+		//withConfig(MenuConfig.get().withDesignItem(DesignItem.getWhiteDesign()).withBreadcrumbs(true));
+		
 		TopMenu topMenu = getTopMenu();
 		
-		topMenu.add(HMTextField.get(VaadinIcon.SEARCH, "Search ..."));
+		String userFullName = "Agent 47";
+		int userType = 0;
+		
+		VaadinSession vaadinSession = VaadinSession.getCurrent();
+		if (vaadinSession != null) {
+			if(vaadinSession.getAttribute("sesUserFullName") != null) {
+				userFullName = vaadinSession.getAttribute("sesUserFullName").toString();
+				userType = Integer.parseInt(vaadinSession.getAttribute("sesUserType").toString());
+			}
+		}
+		
+		topMenu.add(HMLabel.get()
+				.withCaption("Welcome " + userFullName)
+				);
+		// JB(20190531): Hide temporary.
+		//topMenu.add(HMTextField.get(VaadinIcon.SEARCH, "Search ..."));
 		
 		topMenu.add(HMButton.get()
 				.withIcon(VaadinIcon.HOME)
@@ -53,8 +154,13 @@ public class RouterLayout extends HybridMenu  {
 		
 		LeftMenu leftMenu = getLeftMenu();
 		
+		/*
 		leftMenu.add(HMLabel.get()
 				.withCaption("<b>Hybrid</b> Menu")
+				.withIcon(new Image("./frontend/hybridmenu/logo.png", "HybridMenu Logo")));
+		*/
+		leftMenu.add(HMLabel.get()
+				.withCaption("<b>Tzu Chi</b> MSS")
 				.withIcon(new Image("./frontend/hybridmenu/logo.png", "HybridMenu Logo")));
 		
 		getBreadCrumbs().setRoot(leftMenu.add(HMButton.get()
@@ -67,10 +173,13 @@ public class RouterLayout extends HybridMenu  {
 				.withIcon(VaadinIcon.SEARCH)
 				.withNavigateTo(SearchPage.class));
 		
-		leftMenu.add(HMButton.get()
-				.withCaption("Upload")
-				.withIcon(VaadinIcon.UPLOAD)
-				.withNavigateTo(UploadPage.class));
+		// Contributor only.
+		if (userType == 2) {
+			leftMenu.add(HMButton.get()
+					.withCaption("Upload")
+					.withIcon(VaadinIcon.UPLOAD)
+					.withNavigateTo(UploadPage.class));
+		}
 		/*
 		leftMenu.add(HMButton.get()
 				.withCaption("Notification Builder") 
@@ -119,26 +228,38 @@ public class RouterLayout extends HybridMenu  {
 				.withNavigateTo(MemberPage.class));
 		*/
 
-		HMSubMenu demoSettings = leftMenu.add(HMSubMenu.get()
-				.withCaption("Settings")
-				.withIcon(VaadinIcon.COGS));
-		
-		demoSettings.add(HMButton.get()
-				.withCaption("White Theme")
-				.withIcon(VaadinIcon.PALETE)
-				.withClickListener(e -> switchTheme(DesignItem.getWhiteDesign())));
+		// For BizAdmin and SysAdmin only.
+		if (userType == 3 || userType == 4) {
+			HMSubMenu memberList = leftMenu.add(HMSubMenu.get()
+					.withCaption("Settings")
+					.withIcon(VaadinIcon.COGS));
+			
+			memberList.add(HMButton.get()
+					.withCaption("User")
+					.withIcon(VaadinIcon.USERS)
+					.withNavigateTo(SearchUserPage.class));
 
-		demoSettings.add(HMButton.get()
-				.withCaption("Dark Theme")
-				.withIcon(VaadinIcon.PALETE)
-				.withClickListener(e -> switchTheme(DesignItem.getDarkDesign())));
+			/*
+			HMSubMenu demoSettings = leftMenu.add(HMSubMenu.get()
+					.withCaption("Settings")
+					.withIcon(VaadinIcon.COGS));
+			
+			demoSettings.add(HMButton.get()
+					.withCaption("White Theme")
+					.withIcon(VaadinIcon.PALETE)
+					.withClickListener(e -> switchTheme(DesignItem.getWhiteDesign())));
+
+			demoSettings.add(HMButton.get()
+					.withCaption("Dark Theme")
+					.withIcon(VaadinIcon.PALETE)
+					.withClickListener(e -> switchTheme(DesignItem.getDarkDesign())));
+			
+			demoSettings.add(HMButton.get()
+					.withCaption("Minimal")
+					.withIcon(VaadinIcon.COG)
+					.withClickListener(e -> getLeftMenu().toggleSize()));
+			*/
+		}
 		
-		demoSettings.add(HMButton.get()
-				.withCaption("Minimal")
-				.withIcon(VaadinIcon.COG)
-				.withClickListener(e -> getLeftMenu().toggleSize()));
-		
-		
-		return true; // build menu
 	}
 }

@@ -1,0 +1,65 @@
+.fileDetailsImage {
+	width: 100%;
+	height: 100%;
+}
+
+.fileDetailsImgFrame {
+	/*
+	border-top: 1px solid #bdbdbd; 
+	border-bottom: 1px solid #bdbdbd;
+	border-left: 1px solid #bdbdbd;
+	border-right: 1px solid #bdbdbd;
+	*/
+	max-width: 1000px !important;
+	max-height: 1000px; 
+	padding: 2px !important;
+}
+
+.fileDetailsEditImage {
+	width: 100%;
+	/*height: 100%;*/
+}
+
+.fileDetailsEditImgFrame {
+	/*
+	border-top: 1px solid #bdbdbd; 
+	border-bottom: 1px solid #bdbdbd;
+	border-left: 1px solid #bdbdbd;
+	border-right: 1px solid #bdbdbd;
+	*/
+	/*max-width: 500px !important;*/
+	max-height: 400px; 
+	padding: 2px !important;
+}
+
+.fileDetailsEditRow {
+	width: 100%;
+	/*height: 600px;*/
+}
+
+.fileDetailsEditRow2 {
+	width: 100%;
+	/*height: 200px;*/
+}
+
+.fileDetailsEditPanel {
+	width: 100%;
+	/*height: 300px;*/
+}
+
+.fileDetailsEditTextBox {
+	width: 100%;
+}
+
+.fileDetailsEditLabel {
+	font-size: 14px;
+}
+
+.fileDetailsLabelCaption {
+	font-weight: bold;
+	width: 180px;
+}
+
+.fileDetailsLabelCaptionShort {
+	font-weight: bold;
+}

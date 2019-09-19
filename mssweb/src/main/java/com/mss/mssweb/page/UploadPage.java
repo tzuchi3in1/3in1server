@@ -16,6 +16,8 @@ import com.vaadin.flow.router.Route;
 import com.mss.mssweb.RouterLayout;
 import com.mss.mssweb.bc.FileBC;
 
+import org.tzuchi.syslib.metadata.*;
+
 @Route(value = "upload", layout = RouterLayout.class)
 public class UploadPage extends VerticalLayout {
 	
@@ -32,6 +34,7 @@ public class UploadPage extends VerticalLayout {
 		upload.setAcceptedFileTypes("image/jpeg", "image/jpg", "image/png", "image/gif");
 		//upload.setAutoUpload(false);
 		upload.setWidth("600px");
+		upload.setMaxFileSize(52428800); // 52428800 = 50MB
 		
 		//upload.addSucceededListener(event -> showOutput(event.getFileName(), buffer.getInputStream(event.getFileName())));
 		upload.addSucceededListener(event -> uploadFile(event.getFileName(), buffer.getInputStream(event.getFileName())));
@@ -55,7 +58,7 @@ public class UploadPage extends VerticalLayout {
 	
 	public void uploadFile(String fileName, InputStream fileContent) {
 		
-		if (FileBC.saveFile(fileName,  fileContent) ) {
+		if (FileBC.saveFile2(fileName,  fileContent) ) {
 			//Label lblFileName = new Label(fileName + " uploaded successfully.");
 			
 			//vlMsgPanel.add(lblFileName);

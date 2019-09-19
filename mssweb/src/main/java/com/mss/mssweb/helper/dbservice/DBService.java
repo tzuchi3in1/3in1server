@@ -13,7 +13,8 @@ public class DBService {
 	
 	/* Constant variables. */
 	//public static String baseDBConnUrl = "jdbc:mysql://localhost:3306/sakila?characterEncoding=latin1&useConfigs=maxPerformance"; 
-	public static String baseDBConnUrl = "jdbc:mysql://localhost:3306/tzuchi?characterEncoding=latin1&useConfigs=maxPerformance";
+	//public static String baseDBConnUrl = "jdbc:mysql://localhost:3306/tzuchi?characterEncoding=latin1&useConfigs=maxPerformance";
+	public static String baseDBConnUrl = "jdbc:mysql://localhost:3306/tzuchi?characterEncoding=UTF-8&useConfigs=maxPerformance";
 	public static String baseDBUserID = "juneboon";
 	public static String baseDBPassword = "pass@word1";
 	

@@ -1,3 +1,23 @@
+.srcTextbox1 {
+	width: 400px;
+}
+
+.srcComboBox1 {
+	width: 400px;
+}
+
+.srcHorizontalLayout1 {
+	margin-top: 0px;
+}
+
+.srcButton1 {
+	margin-top: 35px;
+}
+
+.srcLabel1 {
+	font-size: 14px;
+}
+
 .grid {
 	/*background-color: white;*/
 }
@@ -82,3 +102,5 @@
 	color: #a94442;
 	padding: 5px;
 }
+
+
